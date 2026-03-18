@@ -1,0 +1,15 @@
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo
+backup*.tar.gz
+*.bak
+*.log
+node_modules/
+dist/
+.env
+.env.local
+.env*.local
