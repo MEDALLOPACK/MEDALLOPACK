@@ -1,0 +1,35 @@
+name: 💾 Backup a Google Drive
+on:
+  schedule:
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar rclone
+        run: curl https://rclone.org/install.sh | sudo bash
+      - name: Configurar rclone
+        run: |
+          mkdir -p ~/.config/rclone
+          echo "${{ secrets.RCLONE_CONF }}" | base64 --decode > ~/.config/rclone/rclone.conf
+      - name: Crear backup
+        id: bk
+        run: |
+          TS=$(date +%Y-%m-%d_%H-%M-%S)
+          FILE="backup_MEDALLOPACK_${TS}.tar.gz"
+          tar -czf "${FILE}" --exclude='.git' --exclude='*.tar.gz' .
+          echo "file=${FILE}" >> $GITHUB_OUTPUT
+          echo "✅ $(du -sh ${FILE} | cut -f1)"
+      - name: Subir a Google Drive
+        run: rclone copy "${{ steps.bk.outputs.file }}" gdrive:backups/MEDALLOPACK/ --progress
+      - name: Limpiar viejos (mantener 5)
+        run: |
+          COUNT=$(rclone lsf gdrive:backups/MEDALLOPACK/ | wc -l)
+          if [ "$COUNT" -gt 5 ]; then
+            rclone lsf gdrive:backups/MEDALLOPACK/ | sort | head -n -5 | while read f; do
+              rclone delete "gdrive:backups/MEDALLOPACK/$f" && echo "🗑 Eliminado: $f"
+            done
+          fi
+      - run: echo "📦 Total backups: $(rclone lsf gdrive:backups/MEDALLOPACK/ | wc -l)"
