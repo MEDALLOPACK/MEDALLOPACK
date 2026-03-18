@@ -1,0 +1,26 @@
+name: ✅ CI — Validación Automática
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verificar archivos
+        run: |
+          [ -f index.html ] && echo "✅ index.html" || (echo "❌ Falta index.html" && exit 1)
+          [ -f robots.txt ] && echo "✅ robots.txt"  || echo "⚠ Sin robots.txt"
+          [ -f 404.html ]   && echo "✅ 404.html"    || echo "⚠ Sin 404.html"
+      - name: Validar HTML
+        run: |
+          sudo apt-get install -y tidy 2>/dev/null || true
+          tidy -errors -quiet -utf8 index.html && echo "✅ HTML OK" || echo "⚠ Advertencias"
+        continue-on-error: true
+      - name: Estadísticas
+        run: |
+          echo "📦 $(du -sh . --exclude='.git' | cut -f1) total"
+          echo "📄 $(find . -not -path './.git/*' -type f | wc -l) archivos"
+          echo "🔀 Branch: main | Commit: $GITHUB_SHA"
